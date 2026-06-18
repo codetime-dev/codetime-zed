@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 members = ["codetime-ls"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 
 [profile.release]
 lto = "thin"
