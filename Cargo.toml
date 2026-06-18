@@ -1,0 +1,20 @@
+[package]
+name = "codetime-zed"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+zed_extension_api = "0.7.0"
+
+[lib]
+name = "codetime_zed"
+crate-type = ["cdylib"]
+
+[workspace]
+members = ["codetime-ls"]
+
+[workspace.package]
+version = "0.1.0"
+
+[profile.release]
+lto = "thin"
