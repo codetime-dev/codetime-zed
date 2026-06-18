@@ -34,6 +34,11 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             cross: false
+          # Native ARM64 runner: cross-compiling the TLS backend from x64
+          # Windows is brittle, so build aarch64-windows on real hardware.
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            cross: false
     steps:
       - uses: actions/checkout@v4
 
