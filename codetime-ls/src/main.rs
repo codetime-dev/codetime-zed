@@ -98,6 +98,8 @@ struct CodetimeLanguageServer {
     editor: Mutex<String>,
     /// (last file path, time it was reported) — drives heartbeat throttling.
     last: Mutex<(String, Instant)>,
+    /// Where the token came from, logged on `initialized`. Empty if none found.
+    token_source: Mutex<String>,
 }
 
 /// Turn a `file://` URI into an OS path string.
@@ -262,6 +264,7 @@ impl LanguageServer for CodetimeLanguageServer {
 
         {
             let mut settings = self.settings.lock().await;
+            let mut source = "settings.json (initialization_options)";
             if let Some(options) = params.initialization_options {
                 // Accept a few key spellings for convenience.
                 for key in ["token", "api_key", "api-key"] {
@@ -280,11 +283,17 @@ impl LanguageServer for CodetimeLanguageServer {
             // Fall back to the CODETIME_TOKEN env var, then the shared
             // ~/.codetime/config.json other CodeTime clients already wrote.
             if settings.token.as_deref().is_none_or(str::is_empty) {
-                settings.token = std::env::var("CODETIME_TOKEN")
-                    .ok()
-                    .filter(|t| !t.is_empty())
-                    .or_else(token_from_config_file);
+                if let Some(token) = std::env::var("CODETIME_TOKEN").ok().filter(|t| !t.is_empty()) {
+                    settings.token = Some(token);
+                    source = "the CODETIME_TOKEN environment variable";
+                } else if let Some(token) = token_from_config_file() {
+                    settings.token = Some(token);
+                    source = "~/.codetime/config.json";
+                } else {
+                    source = "";
+                }
             }
+            *self.token_source.lock().await = source.to_string();
         }
 
         Ok(InitializeResult {
@@ -309,9 +318,29 @@ impl LanguageServer for CodetimeLanguageServer {
     }
 
     async fn initialized(&self, _: InitializedParams) {
+        let version = env!("CARGO_PKG_VERSION");
         self.client
-            .log_message(MessageType::INFO, "CodeTime language server initialized.")
+            .log_message(
+                MessageType::INFO,
+                format!("CodeTime language server {version} initialized."),
+            )
             .await;
+
+        let source = self.token_source.lock().await.clone();
+        if source.is_empty() {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    "CodeTime: no token found. Set initialization_options.token in settings.json, \
+                     the CODETIME_TOKEN environment variable, or a token in ~/.codetime/config.json. \
+                     Events will be skipped until a token is available.",
+                )
+                .await;
+        } else {
+            self.client
+                .log_message(MessageType::INFO, format!("CodeTime: token loaded from {source}."))
+                .await;
+        }
     }
 
     async fn shutdown(&self) -> Result<()> {
@@ -363,6 +392,7 @@ async fn main() {
             platform_arch: std::env::consts::ARCH.to_string(),
             editor: Mutex::new("Zed".to_string()),
             last: Mutex::new((String::new(), Instant::now())),
+            token_source: Mutex::new(String::new()),
         })
     });
 

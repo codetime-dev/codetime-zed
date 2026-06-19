@@ -53,6 +53,11 @@ Optional key under `initialization_options`: `api_url` overrides the API base
 (default `https://api.codetime.dev`). An `HTTPS_PROXY` / `HTTP_PROXY` env var is
 honored automatically.
 
+On startup the language server logs which source the token came from, e.g.
+`CodeTime: token loaded from ~/.codetime/config.json`, or a warning if none was
+found. View it in Zed via the command palette → **dev: open language server
+logs** → `CodeTime`.
+
 ## Installing as a dev extension
 
 The published flow downloads a prebuilt `codetime-ls` from GitHub releases. To
@@ -63,7 +68,8 @@ run from source:
 
    ```sh
    cargo install --path codetime-ls
-   # or: cargo build -p codetime-ls --release && cp target/release/codetime-ls ~/.local/bin/
+   # or: cargo build --release --manifest-path codetime-ls/Cargo.toml \
+   #     && cp codetime-ls/target/release/codetime-ls ~/.local/bin/
    ```
 
 2. In Zed, open the command palette → **zed: install dev extension** and select
@@ -76,7 +82,11 @@ run from source:
 ## Building
 
 ```sh
-cargo build -p codetime-ls                          # native language server
-rustup target add wasm32-wasip1                      # once
-cargo build -p codetime-zed --target wasm32-wasip1   # the extension itself
+cargo build --manifest-path codetime-ls/Cargo.toml   # native language server
+rustup target add wasm32-wasip1                       # once
+cargo build --target wasm32-wasip1                    # the extension itself
 ```
+
+`codetime-ls` lives in its own Cargo workspace so the extension's
+`wasm32-wasip1` build never tries to compile it (its tokio/reqwest
+dependencies don't target wasm).
