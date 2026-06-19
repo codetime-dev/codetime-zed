@@ -53,6 +53,22 @@ struct Settings {
     api_url: Option<String>,
 }
 
+/// Read the token from the shared `~/.codetime/config.json` that the CodeTime
+/// CLI and other editor clients write, so Zed picks it up with no extra setup.
+fn token_from_config_file() -> Option<String> {
+    let home = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE"))?;
+    let path = std::path::Path::new(&home)
+        .join(".codetime")
+        .join("config.json");
+    let contents = std::fs::read_to_string(path).ok()?;
+    let value: Value = serde_json::from_str(&contents).ok()?;
+    value
+        .get("token")
+        .and_then(Value::as_str)
+        .filter(|t| !t.is_empty())
+        .map(str::to_string)
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct EventLog {
@@ -160,11 +176,7 @@ impl CodetimeLanguageServer {
 
         let (token, api_url) = {
             let settings = self.settings.lock().await;
-            let token = settings
-                .token
-                .clone()
-                .or_else(|| std::env::var("CODETIME_TOKEN").ok())
-                .filter(|t| !t.is_empty());
+            let token = settings.token.clone().filter(|t| !t.is_empty());
             let api_url = settings
                 .api_url
                 .clone()
@@ -176,8 +188,9 @@ impl CodetimeLanguageServer {
             self.client
                 .log_message(
                     MessageType::WARNING,
-                    "CodeTime: no token configured (set lsp.CodeTime.initialization_options.token \
-                     or the CODETIME_TOKEN environment variable). Skipping event.",
+                    "CodeTime: no token found (set lsp.CodeTime.initialization_options.token, \
+                     the CODETIME_TOKEN environment variable, or a token in \
+                     ~/.codetime/config.json). Skipping event.",
                 )
                 .await;
             return;
@@ -247,21 +260,30 @@ impl LanguageServer for CodetimeLanguageServer {
             *self.editor.lock().await = editor;
         }
 
-        if let Some(options) = params.initialization_options {
-            let options: Value = options;
+        {
             let mut settings = self.settings.lock().await;
-            // Accept a few key spellings for convenience.
-            for key in ["token", "api_key", "api-key"] {
-                if let Some(v) = options.get(key).and_then(Value::as_str) {
-                    settings.token = Some(v.to_string());
-                    break;
+            if let Some(options) = params.initialization_options {
+                // Accept a few key spellings for convenience.
+                for key in ["token", "api_key", "api-key"] {
+                    if let Some(v) = options.get(key).and_then(Value::as_str) {
+                        settings.token = Some(v.to_string());
+                        break;
+                    }
+                }
+                for key in ["api_url", "api-url"] {
+                    if let Some(v) = options.get(key).and_then(Value::as_str) {
+                        settings.api_url = Some(v.to_string());
+                        break;
+                    }
                 }
             }
-            for key in ["api_url", "api-url"] {
-                if let Some(v) = options.get(key).and_then(Value::as_str) {
-                    settings.api_url = Some(v.to_string());
-                    break;
-                }
+            // Fall back to the CODETIME_TOKEN env var, then the shared
+            // ~/.codetime/config.json other CodeTime clients already wrote.
+            if settings.token.as_deref().is_none_or(str::is_empty) {
+                settings.token = std::env::var("CODETIME_TOKEN")
+                    .ok()
+                    .filter(|t| !t.is_empty())
+                    .or_else(token_from_config_file);
             }
         }
 

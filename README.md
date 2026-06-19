@@ -24,8 +24,12 @@ Code feature has no Zed equivalent. Tracking (the core feature) works the same.
 
 ## Configuration
 
-Get your token from [codetime.dev](https://codetime.dev), then add it to Zed's
-`settings.json`:
+If you have already signed in with another CodeTime client (the CLI, the VS Code
+extension, …), a token is in `~/.codetime/config.json` and this extension picks
+it up automatically — no setup needed.
+
+To set it explicitly, get your token from [codetime.dev](https://codetime.dev)
+and add it to Zed's `settings.json`:
 
 ```json
 {
@@ -39,12 +43,15 @@ Get your token from [codetime.dev](https://codetime.dev), then add it to Zed's
 }
 ```
 
-Optional keys under `initialization_options`:
+The token is resolved in this order, first match wins:
 
-- `api_url` — override the API base (default `https://api.codetime.dev`).
+1. `initialization_options.token` in `settings.json` (above)
+2. the `CODETIME_TOKEN` environment variable in the shell Zed inherits
+3. the `token` field of `~/.codetime/config.json`
 
-Alternatively, set the `CODETIME_TOKEN` environment variable in the shell Zed
-inherits. An `HTTPS_PROXY` / `HTTP_PROXY` env var is honored automatically.
+Optional key under `initialization_options`: `api_url` overrides the API base
+(default `https://api.codetime.dev`). An `HTTPS_PROXY` / `HTTP_PROXY` env var is
+honored automatically.
 
 ## Installing as a dev extension
 
