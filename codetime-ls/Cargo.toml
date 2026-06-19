@@ -1,9 +1,13 @@
 [package]
 name = "codetime-ls"
-version.workspace = true
+version = "0.1.2"
 edition = "2021"
 repository = "https://github.com/codetime-dev/codetime-zed"
 description = "Language server that reports editing activity to the CodeTime API."
+
+# Own workspace root, kept separate from the wasm extension at the repo root so
+# the extension's `wasm32-wasip1` build never tries to compile this crate.
+[workspace]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

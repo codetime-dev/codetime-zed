@@ -1,6 +1,6 @@
 [package]
 name = "codetime-zed"
-version.workspace = true
+version = "0.1.2"
 edition = "2021"
 
 [dependencies]
@@ -10,11 +10,10 @@ zed_extension_api = "0.7.0"
 name = "codetime_zed"
 crate-type = ["cdylib"]
 
-[workspace]
-members = ["codetime-ls"]
-
-[workspace.package]
-version = "0.1.1"
-
+# `codetime-ls` is intentionally NOT a member here. The extension compiles to
+# `wasm32-wasip1`, and the language server depends on tokio/reqwest/tower-lsp,
+# which cannot build for wasm. Keeping it in its own workspace (see
+# codetime-ls/Cargo.toml) ensures Zed's `cargo build --target wasm32-wasip1`
+# never pulls it in.
 [profile.release]
 lto = "thin"

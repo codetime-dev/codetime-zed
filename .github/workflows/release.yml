@@ -54,9 +54,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.cross }}" = "true" ]; then
-            cross build -p codetime-ls --release --target ${{ matrix.target }}
+            cross build --manifest-path codetime-ls/Cargo.toml --release --target ${{ matrix.target }}
           else
-            cargo build -p codetime-ls --release --target ${{ matrix.target }}
+            cargo build --manifest-path codetime-ls/Cargo.toml --release --target ${{ matrix.target }}
           fi
 
       - name: Package
@@ -65,7 +65,7 @@ jobs:
           bin=codetime-ls
           ext=""
           if [[ "${{ matrix.target }}" == *windows* ]]; then ext=".exe"; fi
-          src="target/${{ matrix.target }}/release/${bin}${ext}"
+          src="codetime-ls/target/${{ matrix.target }}/release/${bin}${ext}"
           out="codetime-ls-${{ matrix.target }}.zip"
           # Zip must contain the binary at its root, named codetime-ls(.exe).
           if command -v 7z >/dev/null 2>&1; then
