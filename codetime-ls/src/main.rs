@@ -227,7 +227,17 @@ impl CodetimeLanguageServer {
                 .send()
                 .await
             {
-                Ok(resp) if resp.status().is_success() => {}
+                Ok(resp) if resp.status().is_success() => {
+                    client
+                        .log_message(
+                            MessageType::INFO,
+                            format!(
+                                "CodeTime: reported {} ({})",
+                                payload.relative_file, payload.event_type
+                            ),
+                        )
+                        .await;
+                }
                 Ok(resp) if resp.status().as_u16() == 401 => {
                     client
                         .log_message(MessageType::ERROR, "CodeTime: token rejected (401).")
