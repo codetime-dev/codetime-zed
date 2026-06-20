@@ -67,13 +67,24 @@ jobs:
           if [[ "${{ matrix.target }}" == *windows* ]]; then ext=".exe"; fi
           src="codetime-ls/target/${{ matrix.target }}/release/${bin}${ext}"
           out="codetime-ls-${{ matrix.target }}.zip"
-          # Zip must contain the binary at its root, named codetime-ls(.exe).
-          if command -v 7z >/dev/null 2>&1; then
-            cp "$src" "${bin}${ext}"
-            7z a "$out" "${bin}${ext}"
-          else
-            (cd "target/${{ matrix.target }}/release" && zip -j "$OLDPWD/$out" "${bin}${ext}")
-          fi
+          # Stage in a separate dir. The repo already has a `codetime-ls/`
+          # source dir, so copying the binary to ./codetime-ls would land it
+          # *inside* that dir and the archive would capture the whole source
+          # tree (the extension then tries to exec a directory -> EACCES).
+          mkdir -p dist
+          cp "$src" "dist/${bin}${ext}"
+          (
+            cd dist
+            if [[ "${{ matrix.target }}" == *windows* ]]; then
+              # Windows ignores the executable bit; 7z is always on the runner.
+              7z a "../$out" "${bin}${ext}"
+            else
+              # Unix: keep +x and use Info-ZIP `zip`, which records the mode so
+              # the extracted binary stays executable.
+              chmod +x "${bin}${ext}"
+              zip "../$out" "${bin}${ext}"
+            fi
+          )
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2

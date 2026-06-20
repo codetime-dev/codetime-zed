@@ -1,6 +1,6 @@
 [package]
 name = "codetime-ls"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 repository = "https://github.com/codetime-dev/codetime-zed"
 description = "Language server that reports editing activity to the CodeTime API."
