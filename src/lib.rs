@@ -19,14 +19,6 @@ fn executable_name(binary: &str) -> String {
     }
 }
 
-/// Strip the leading slash WASI prepends to absolute Windows paths.
-fn sanitize_path(path: &str) -> String {
-    match zed::current_platform() {
-        (zed::Os::Windows, _) => path.trim_start_matches('/').to_string(),
-        _ => path.to_string(),
-    }
-}
-
 fn project_name_from_path(path: &str) -> Option<String> {
     Path::new(path)
         .file_name()
@@ -128,7 +120,7 @@ impl CodetimeExtension {
             .map(|cwd| cwd.join(&relative))
             .unwrap_or(relative);
         self.cached_binary_path = Some(absolute.clone());
-        Ok(sanitize_path(&absolute.to_string_lossy()))
+        Ok(absolute.to_string_lossy().into_owned())
     }
 }
 
@@ -147,7 +139,7 @@ impl zed::Extension for CodetimeExtension {
         let command = self.binary_path(language_server_id, worktree)?;
 
         let mut args = Vec::new();
-        let project_folder = sanitize_path(worktree.root_path().as_str());
+        let project_folder = worktree.root_path();
         if !project_folder.is_empty() {
             if let Some(project_name) = project_name_from_path(&project_folder) {
                 args.push("--project".to_string());
