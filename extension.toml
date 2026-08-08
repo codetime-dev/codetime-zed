@@ -1,4 +1,4 @@
-id = "codetime-tracker"
+id = "codetime-lsp"
 name = "CodeTime"
 description = "Automatic coding-time tracking for codetime.dev."
 version = "0.1.7"
