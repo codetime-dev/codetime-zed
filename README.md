@@ -34,7 +34,7 @@ and add it to Zed's `settings.json`:
 ```json
 {
   "lsp": {
-    "CodeTime": {
+    "codetime": {
       "initialization_options": {
         "token": "<your-token>"
       }
@@ -56,7 +56,7 @@ honored automatically.
 On startup the language server logs which source the token came from, e.g.
 `CodeTime: token loaded from ~/.codetime/config.json`, or a warning if none was
 found. View it in Zed via the command palette → **dev: open language server
-logs** → `CodeTime`.
+logs** → `codetime`.
 
 ## Installing as a dev extension
 
@@ -76,7 +76,7 @@ run from source:
    this repository's root. Zed compiles `src/lib.rs` to WASM and loads it.
 
 3. Add your token (see above) and start editing. Watch the language server log
-   (command palette → **dev: open language server logs** → `CodeTime`) to
+   (command palette → **dev: open language server logs** → `codetime`) to
    confirm events are sent.
 
 ## Building
